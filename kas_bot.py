@@ -16,6 +16,8 @@ import os
 import asyncio
 import signal
 import logging
+from datetime import date
+import httpx
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -264,19 +266,96 @@ EMERGENCY = """🆘 **Emergency Numbers — Kaş**
 📍 Town centre, Kaş"""
 
 # ═══════════════════════════════════════════════════════
+# WEATHER
+# ═══════════════════════════════════════════════════════
+
+def _weather_emoji(code: int) -> str:
+    if code == 0: return "☀️ Açık"
+    if code in (1, 2): return "🌤️ Az Bulutlu"
+    if code == 3: return "☁️ Kapalı"
+    if code in (45, 48): return "🌫️ Sisli"
+    if code in (51, 53, 55): return "🌦️ Çisenti"
+    if code in (61, 63, 65): return "🌧️ Yağmur"
+    if code in (71, 73, 75): return "❄️ Kar"
+    if code in (80, 81, 82): return "🌦️ Sağanak"
+    if code in (95, 96, 99): return "⛈️ Fırtına"
+    return "🌡️ Değişken"
+
+def _wind_dir(deg: float) -> str:
+    dirs = ["K","KKD","KD","DKD","D","DGD","GD","GGD","G","GGB","GB","BGB","B","KBK","KB","KKB"]
+    return dirs[round(deg / 22.5) % 16]
+
+async def fetch_weather() -> str:
+    """Kaş için anlık hava + deniz durumu (Open-Meteo, ücretsiz, API key gerektirmez)."""
+    lat, lon = 36.1992, 29.6445
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            weather_r, marine_r = await asyncio.gather(
+                client.get("https://api.open-meteo.com/v1/forecast", params={
+                    "latitude": lat, "longitude": lon,
+                    "current": "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code",
+                    "daily": "temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset",
+                    "timezone": "Europe/Istanbul", "forecast_days": 1,
+                }),
+                client.get("https://marine-api.open-meteo.com/v1/marine", params={
+                    "latitude": lat, "longitude": lon,
+                    "current": "sea_surface_temperature,wave_height,wave_direction",
+                    "timezone": "Europe/Istanbul",
+                }),
+            )
+        w = weather_r.json()
+        m = marine_r.json()
+        cur = w["current"]
+        day = w["daily"]
+        sea = m["current"]
+
+        temp     = round(cur["temperature_2m"])
+        feels    = round(cur["apparent_temperature"])
+        tmax     = round(day["temperature_2m_max"][0])
+        tmin     = round(day["temperature_2m_min"][0])
+        humidity = cur["relative_humidity_2m"]
+        wind_spd = round(cur["wind_speed_10m"])
+        wind_d   = _wind_dir(cur["wind_direction_10m"])
+        desc     = _weather_emoji(cur["weather_code"])
+        uv       = round(day["uv_index_max"][0])
+        sunrise  = day["sunrise"][0].split("T")[1][:5]
+        sunset   = day["sunset"][0].split("T")[1][:5]
+        sea_temp = round(sea["sea_surface_temperature"], 1)
+        wave_h   = round(sea["wave_height"], 1)
+        wave_d   = _wind_dir(sea["wave_direction"])
+        today    = date.today().strftime("%-d %B %Y")
+
+        return (
+            f"{desc}\n"
+            f"📍 *Kaş Hava Durumu — {today}*\n\n"
+            f"🌡️ Sıcaklık: *{temp}°C* (hissedilen: {feels}°C)\n"
+            f"📊 Gün: ↓{tmin}°C – ↑{tmax}°C\n"
+            f"💧 Nem: {humidity}%\n"
+            f"💨 Rüzgar: {wind_spd} km/h · {wind_d}\n"
+            f"☀️ UV: {uv} · 🌅 {sunrise} / 🌇 {sunset}\n\n"
+            f"🌊 *Deniz Suyu: {sea_temp}°C*\n"
+            f"〰️ Dalga: {wave_h}m · {wave_d} yönü\n\n"
+            f"_📡 Open-Meteo · Anlık güncelleme_"
+        )
+    except Exception as e:
+        logger.error(f"Weather error: {e}")
+        return "⚠️ Hava durumu şu an alınamadı. Biraz sonra tekrar dene."
+
+
+# ═══════════════════════════════════════════════════════
 # KEYBOARDS
 # ═══════════════════════════════════════════════════════
 
 def main_menu_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🏺 ZuKaş 2026", callback_data="zukas_menu"),
-         InlineKeyboardButton("🗺️ Kaş Guide", callback_data="kas_menu")],
-        [InlineKeyboardButton("🚌 Transport", callback_data="transport_menu"),
-         InlineKeyboardButton("🍽️ Food & Cafes", callback_data="food_menu")],
-        [InlineKeyboardButton("⛵ Boat Tours", callback_data="boats"),
-         InlineKeyboardButton("🏨 Accommodation", callback_data="stay")],
-        [InlineKeyboardButton("💻 Co-Working", callback_data="coworking"),
-         InlineKeyboardButton("🆘 Emergency", callback_data="emergency")],
+        [InlineKeyboardButton("🌤️ Hava & Deniz", callback_data="weather"),
+         InlineKeyboardButton("🏺 ZuKaş 2026", callback_data="zukas_menu")],
+        [InlineKeyboardButton("🚌 Ulaşım", callback_data="transport_menu"),
+         InlineKeyboardButton("🍽️ Yeme-İçme", callback_data="food_menu")],
+        [InlineKeyboardButton("⛵ Tekne Turları", callback_data="boats"),
+         InlineKeyboardButton("🏨 Konaklama", callback_data="stay")],
+        [InlineKeyboardButton("💻 Çalışma Alanı", callback_data="coworking"),
+         InlineKeyboardButton("🆘 Acil", callback_data="emergency")],
     ])
 
 def zukas_keyboard():
@@ -357,9 +436,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
 
-    if data == "main_menu":
+    if data == "weather":
+        await query.edit_message_text("⏳ Hava durumu alınıyor...", parse_mode="Markdown")
+        weather_text = await fetch_weather()
+        await query.edit_message_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard())
+
+    elif data == "main_menu":
         await query.edit_message_text(
-            "🏺 *Kaş & ZuKaş 2026 Guide*\nWhat would you like to know?",
+            "🏺 *Kaş & ZuKaş 2026 Rehberi*\nNe öğrenmek istersin?",
             parse_mode="Markdown",
             reply_markup=main_menu_keyboard()
         )
@@ -434,10 +518,19 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_type = update.message.chat.type
 
     # Quick keyword shortcuts → instant structured reply
+    # Weather: async, handled separately
+    weather_kws = ("hava", "weather", "sıcaklık", "temperature", "deniz", "sea", "dalga", "wave",
+                   "yağmur", "rain", "güneş", "sunny", "rüzgar", "wind", "nem", "humidity")
+    if any(kw in msg for kw in weather_kws):
+        await update.message.chat.send_action("typing")
+        weather_text = await fetch_weather()
+        await update.message.reply_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard())
+        return
+
     quick_keywords = {
         ("bilet", "ticket", "başvur", "kayıt", "nasıl katıl", "sola.day", "sola day", "register", "join zukas", "how to join", "apply"): (ZUKAS_FAQ["Apply"], zukas_keyboard()),
         ("transport", "bus", "minibus", "shuttle", "airport", "transfer", "how to get", "özgür", "gümüş", "ulaşım", "otobüs"): (
-            "🚌 *Transport from Kaş*\nWhere do you want to go?", transport_keyboard()),
+            "🚌 *Kaş'tan Ulaşım*\nNereye gitmek istiyorsun?", transport_keyboard()),
         ("cafe", "cowork", "wifi", "giant stride", "godo", "linckia", "biiisstt", "çalış"): (COWORKING, back_keyboard()),
         ("hotel", "stay", "sleep", "hostel", "pension", "camping", "kamp", "konaklama"): (STAY, back_keyboard()),
         ("boat", "kekova", "blue cave", "tekne", "tekne turu"): (BOAT_TOURS, back_keyboard()),
@@ -473,8 +566,13 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # SHORTCUT COMMANDS
 # ═══════════════════════════════════════════════════════
 
+async def weather_cmd(update, context):
+    await update.message.chat.send_action("typing")
+    weather_text = await fetch_weather()
+    await update.message.reply_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard())
+
 async def transport_cmd(update, context):
-    await update.message.reply_text("🚌 *Transport from Kaş*", parse_mode="Markdown", reply_markup=transport_keyboard())
+    await update.message.reply_text("🚌 *Kaş'tan Ulaşım*", parse_mode="Markdown", reply_markup=transport_keyboard())
 
 async def food_cmd(update, context):
     await update.message.reply_text(FOOD, parse_mode="Markdown", reply_markup=back_keyboard())
@@ -501,6 +599,8 @@ async def _run_async():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("hava", weather_cmd))
+    app.add_handler(CommandHandler("weather", weather_cmd))
     app.add_handler(CommandHandler("zukas", zukas_cmd))
     app.add_handler(CommandHandler("transport", transport_cmd))
     app.add_handler(CommandHandler("food", food_cmd))
@@ -524,6 +624,7 @@ async def _run_async():
             await app.updater.start_webhook(
                 listen="0.0.0.0",
                 port=port,
+                url_path="/webhook",
                 webhook_url=webhook_url,
                 drop_pending_updates=True,
             )
