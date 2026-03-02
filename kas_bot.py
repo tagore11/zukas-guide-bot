@@ -494,8 +494,6 @@ async def emergency_cmd(update, context):
 def main():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN environment variable not found.")
-        print("   Get a token from @BotFather and run:")
-        print("   BOT_TOKEN=your_token python kas_bot.py")
         return
 
     app = Application.builder().token(BOT_TOKEN).build()
@@ -509,13 +507,25 @@ def main():
     app.add_handler(CommandHandler("boats", boats_cmd))
     app.add_handler(CommandHandler("cowork", cowork_cmd))
     app.add_handler(CommandHandler("emergency", emergency_cmd))
-
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
-    print("🤖 KaşAgora Bot running...")
-    print("📋 Commands: /start /zukas /transport /food /stay /boats /cowork /emergency")
-    app.run_polling(drop_pending_updates=True)
+    # Render webhook modu — RENDER_EXTERNAL_URL varsa webhook, yoksa polling (local dev)
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    port = int(os.environ.get("PORT", 8443))
+
+    if render_url:
+        webhook_url = f"{render_url}/webhook"
+        print(f"🌐 Webhook modu: {webhook_url}")
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            webhook_url=webhook_url,
+            drop_pending_updates=True,
+        )
+    else:
+        print("🤖 Polling modu (local)...")
+        app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
