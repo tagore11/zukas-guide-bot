@@ -528,7 +528,7 @@ async def _run_async():
             print("🤖 Polling modu (local)...")
             await app.updater.start_polling(drop_pending_updates=True)
         await app.updater.idle()
-        await app.stop()
+        # async with app: handles shutdown automatically — do NOT call app.stop() here
 
 
 def main():
