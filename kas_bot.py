@@ -14,6 +14,7 @@ Run:
 
 import os
 import asyncio
+import signal
 import logging
 from google import genai
 from google.genai import types
@@ -513,6 +514,8 @@ async def _run_async():
     render_url = os.environ.get("RENDER_EXTERNAL_URL")
     port = int(os.environ.get("PORT", 8443))
 
+    stop = asyncio.Event()
+
     async with app:
         await app.start()
         if render_url:
@@ -527,8 +530,16 @@ async def _run_async():
         else:
             print("🤖 Polling modu (local)...")
             await app.updater.start_polling(drop_pending_updates=True)
-        await app.updater.idle()
-        # async with app: handles shutdown automatically — do NOT call app.stop() here
+
+        # PTB v21 has no updater.idle() — block until SIGTERM/SIGINT
+        loop = asyncio.get_running_loop()
+        loop.add_signal_handler(signal.SIGTERM, stop.set)
+        loop.add_signal_handler(signal.SIGINT, stop.set)
+        await stop.wait()
+
+        # Must call stop() before async with app: __aexit__ calls shutdown()
+        await app.updater.stop()
+        await app.stop()
 
 
 def main():
