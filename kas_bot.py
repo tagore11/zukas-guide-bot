@@ -494,17 +494,8 @@ async def emergency_cmd(update, context):
 # MAIN
 # ═══════════════════════════════════════════════════════
 
-def main():
-    if not BOT_TOKEN:
-        print("❌ BOT_TOKEN environment variable not found.")
-        return
-
-    # Python 3.12+ no longer auto-creates an event loop; create one explicitly
-    try:
-        asyncio.get_event_loop()
-    except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
+async def _run_async():
+    """Fully async bot runner — compatible with Python 3.14+."""
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -519,22 +510,33 @@ def main():
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
-    # Render webhook modu — RENDER_EXTERNAL_URL varsa webhook, yoksa polling (local dev)
     render_url = os.environ.get("RENDER_EXTERNAL_URL")
     port = int(os.environ.get("PORT", 8443))
 
-    if render_url:
-        webhook_url = f"{render_url}/webhook"
-        print(f"🌐 Webhook modu: {webhook_url}")
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            webhook_url=webhook_url,
-            drop_pending_updates=True,
-        )
-    else:
-        print("🤖 Polling modu (local)...")
-        app.run_polling(drop_pending_updates=True)
+    async with app:
+        await app.start()
+        if render_url:
+            webhook_url = f"{render_url}/webhook"
+            print(f"🌐 Webhook modu: {webhook_url}")
+            await app.updater.start_webhook(
+                listen="0.0.0.0",
+                port=port,
+                webhook_url=webhook_url,
+                drop_pending_updates=True,
+            )
+        else:
+            print("🤖 Polling modu (local)...")
+            await app.updater.start_polling(drop_pending_updates=True)
+        await app.updater.idle()
+        await app.stop()
+
+
+def main():
+    if not BOT_TOKEN:
+        print("❌ BOT_TOKEN environment variable not found.")
+        return
+    asyncio.run(_run_async())
+
 
 if __name__ == "__main__":
     main()
