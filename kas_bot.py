@@ -14,7 +14,7 @@ Run:
 
 import os
 import logging
-import anthropic
+import google.generativeai as genai
 from dotenv import load_dotenv
 load_dotenv()
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -27,7 +27,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 AI_SYSTEM_PROMPT = """You are ZuKaşBot — the official guide for ZuKaş 2026 and the town of Kaş, Turkey.
 
@@ -407,18 +409,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(EMERGENCY, parse_mode="Markdown", reply_markup=back_keyboard())
 
 async def ask_ai(question: str) -> str:
-    """Send question to Claude and get a response."""
-    if not ANTHROPIC_API_KEY:
+    """Send question to Gemini and get a response."""
+    if not GEMINI_API_KEY:
         return "AI chat is not configured. Use the menu buttons or commands like /start, /transport, /food."
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
-            system=AI_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": question}]
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=AI_SYSTEM_PROMPT
         )
-        return message.content[0].text
+        response = model.generate_content(question)
+        return response.text
     except Exception as e:
         logger.error(f"AI error: {e}")
         return "I couldn't process that right now. Try the menu or /start."
