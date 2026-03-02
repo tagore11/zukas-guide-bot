@@ -13,6 +13,7 @@ Run:
 """
 
 import os
+import asyncio
 import logging
 from google import genai
 from google.genai import types
@@ -497,6 +498,12 @@ def main():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN environment variable not found.")
         return
+
+    # Python 3.12+ no longer auto-creates an event loop; create one explicitly
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
 
     app = Application.builder().token(BOT_TOKEN).build()
 
