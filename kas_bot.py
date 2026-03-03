@@ -37,7 +37,191 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-AI_SYSTEM_PROMPT = """You are ZuKaşBot — the official guide for ZuKaş 2026 and the town of Kaş, Turkey.
+# ═══════════════════════════════════════════════════════
+# LANGUAGE SUPPORT
+# ═══════════════════════════════════════════════════════
+
+user_langs: dict[int, str] = {}
+
+def get_lang(user_id: int, tg_lang: str | None = None) -> str:
+    if user_id in user_langs:
+        return user_langs[user_id]
+    if tg_lang:
+        if tg_lang.startswith("ru"):
+            return "ru"
+        if tg_lang.startswith("tr"):
+            return "tr"
+    return "en"
+
+T = {
+    "tr": {
+        "lang_pick":         "🌍 Dil seçin / Choose language / Выберите язык:",
+        "welcome":           "🏺 *Zuzalu Kaş'a hoş geldin — antik demokrasi burada modern yapıcılarla buluşuyor.*\n\nBen ZuKaşBot, rehberin, ilham kaynağın ve arada bir seni güldürenim.\nSor bakalım — ya da Likya güneşinin altında birlikte düşünelim ☀️\n\n📍 *Kaş, Antalya, Türkiye*\n🔵 Akdeniz kıyısı · Likya mirası · Web3 kültürü",
+        "menu_prompt":       "🏺 *Kaş & ZuKaş 2026 Rehberi*\nNe öğrenmek istersin?",
+        "weather_btn":       "🌤️ Hava & Deniz",
+        "zukas_btn":         "🏺 ZuKaş 2026",
+        "transport_btn":     "🚌 Ulaşım",
+        "food_btn":          "🍽️ Yeme-İçme",
+        "boats_btn":         "⛵ Tekne Turları",
+        "stay_btn":          "🏨 Konaklama",
+        "cowork_btn":        "💻 Çalışma Alanı",
+        "emergency_btn":     "🆘 Acil",
+        "back_btn":          "🔙 Ana Menü",
+        "lang_btn":          "🌍 Dil",
+        "zukas_prompt":      "🏺 *ZuKaş 2026 — The Crucible*\nNe öğrenmek istersin?",
+        "transport_prompt":  "🚌 *Kaş'tan Ulaşım*\nNereye gitmek istiyorsun?",
+        "kas_prompt":        "🗺️ *Kaş Rehberi*\nNe arıyorsun?",
+        "loading_weather":   "⏳ Hava durumu alınıyor...",
+        "weather_error":     "⚠️ Hava durumu şu an alınamadı. Biraz sonra tekrar dene.",
+        "ai_error":          "Şu an yanıt üretemiyorum. Menüyü veya /start komutunu dene.",
+        "ai_no_config":      "AI sohbet şu an aktif değil. Menü butonlarını kullan.",
+        "lang_changed":      "✅ Dil değiştirildi: *Türkçe* 🇹🇷",
+        "spots_btn":         "🏖️ Gezilecek Yerler",
+        "zukas_what_btn":    "❓ Nedir?",
+        "zukas_apply_btn":   "📝 Başvur",
+        "zukas_program_btn": "📚 Program",
+        "zukas_speakers_btn":"🎤 Konuşmacılar",
+        "route_not_found":   "Bu güzergah için bilgi bulunamadı.",
+        "help_text": (
+            "📋 *Komutlar:*\n\n"
+            "/start — Ana menü\n"
+            "/lang — Dil değiştir\n"
+            "/hava — Hava durumu\n"
+            "/zukas — ZuKaş 2026 bilgisi\n"
+            "/transport — Ulaşım tarifeleri\n"
+            "/food — Restoran önerileri\n"
+            "/stay — Konaklama\n"
+            "/boats — Tekne turları\n"
+            "/cowork — Çalışma alanları\n"
+            "/emergency — Acil numaralar\n\n"
+            "İletişim: @tagore3699"
+        ),
+        "weather_title":     "Kaş Hava Durumu",
+        "w_temp":            "Sıcaklık",
+        "w_feels":           "hissedilen",
+        "w_day":             "Gün",
+        "w_humid":           "Nem",
+        "w_wind":            "Rüzgar",
+        "w_uv":              "UV",
+        "w_sea":             "Deniz Suyu",
+        "w_wave":            "Dalga",
+        "w_dir":             "yönü",
+        "w_source":          "📡 Open-Meteo · Anlık güncelleme",
+        "ai_lang_instr":     "ÖNEMLI: Kullanıcı Türkçe seçti. Her zaman Türkçe yanıt ver.",
+    },
+    "en": {
+        "lang_pick":         "🌍 Choose language / Dil seçin / Выберите язык:",
+        "welcome":           "🏺 *Welcome to Zuzalu Kaş — where ancient democracy meets modern builders.*\n\nI'm ZuKaşBot, here to guide, inspire, and sometimes make you smile.\nAsk me anything — or let's just reflect under the Lycian sun ☀️\n\n📍 *Kaş, Antalya, Turkey*\n🔵 Mediterranean coast · Lycian heritage · Web3 culture",
+        "menu_prompt":       "🏺 *Kaş & ZuKaş 2026 Guide*\nWhat would you like to explore?",
+        "weather_btn":       "🌤️ Weather & Sea",
+        "zukas_btn":         "🏺 ZuKaş 2026",
+        "transport_btn":     "🚌 Transport",
+        "food_btn":          "🍽️ Food & Dining",
+        "boats_btn":         "⛵ Boat Tours",
+        "stay_btn":          "🏨 Accommodation",
+        "cowork_btn":        "💻 Co-Working",
+        "emergency_btn":     "🆘 Emergency",
+        "back_btn":          "🔙 Main Menu",
+        "lang_btn":          "🌍 Language",
+        "zukas_prompt":      "🏺 *ZuKaş 2026 — The Crucible*\nWhat would you like to know?",
+        "transport_prompt":  "🚌 *Transport from Kaş*\nWhere do you want to go?",
+        "kas_prompt":        "🗺️ *Kaş Guide*\nWhat are you looking for?",
+        "loading_weather":   "⏳ Fetching weather data...",
+        "weather_error":     "⚠️ Weather data unavailable right now. Try again later.",
+        "ai_error":          "I couldn't process that right now. Try the menu or /start.",
+        "ai_no_config":      "AI chat is not configured. Use the menu buttons.",
+        "lang_changed":      "✅ Language set to: *English* 🇬🇧",
+        "spots_btn":         "🏖️ Top Spots",
+        "zukas_what_btn":    "❓ What is it?",
+        "zukas_apply_btn":   "📝 Apply",
+        "zukas_program_btn": "📚 Program",
+        "zukas_speakers_btn":"🎤 Speakers",
+        "route_not_found":   "No information found for this route.",
+        "help_text": (
+            "📋 *Commands:*\n\n"
+            "/start — Main menu\n"
+            "/lang — Change language\n"
+            "/weather — Weather & sea\n"
+            "/zukas — ZuKaş 2026 info\n"
+            "/transport — Transport schedules\n"
+            "/food — Restaurant recommendations\n"
+            "/stay — Accommodation\n"
+            "/boats — Boat tours\n"
+            "/cowork — Co-working spaces\n"
+            "/emergency — Emergency numbers\n\n"
+            "Contact: @tagore3699"
+        ),
+        "weather_title":     "Kaş Weather",
+        "w_temp":            "Temperature",
+        "w_feels":           "feels like",
+        "w_day":             "Day",
+        "w_humid":           "Humidity",
+        "w_wind":            "Wind",
+        "w_uv":              "UV",
+        "w_sea":             "Sea Surface",
+        "w_wave":            "Wave",
+        "w_dir":             "direction",
+        "w_source":          "📡 Open-Meteo · Live data",
+        "ai_lang_instr":     "IMPORTANT: The user has chosen English. Always respond in English.",
+    },
+    "ru": {
+        "lang_pick":         "🌍 Выберите язык / Choose language / Dil seçin:",
+        "welcome":           "🏺 *Добро пожаловать в Zuzalu Kaş — где античная демократия встречает современных строителей.*\n\nЯ ZuKaşBot — ваш гид, источник вдохновения и иногда повод улыбнуться.\nСпрашивайте что угодно — или просто наслаждайтесь ликийским солнцем ☀️\n\n📍 *Каш, Анталья, Турция*\n🔵 Средиземноморское побережье · Ликийское наследие · Web3-культура",
+        "menu_prompt":       "🏺 *Путеводитель по Каш & ZuKaş 2026*\nЧто вас интересует?",
+        "weather_btn":       "🌤️ Погода & Море",
+        "zukas_btn":         "🏺 ZuKaş 2026",
+        "transport_btn":     "🚌 Транспорт",
+        "food_btn":          "🍽️ Кухня",
+        "boats_btn":         "⛵ Морские туры",
+        "stay_btn":          "🏨 Жильё",
+        "cowork_btn":        "💻 Коворкинг",
+        "emergency_btn":     "🆘 Экстренные",
+        "back_btn":          "🔙 Главное меню",
+        "lang_btn":          "🌍 Язык",
+        "zukas_prompt":      "🏺 *ZuKaş 2026 — Горнило*\nЧто вы хотите узнать?",
+        "transport_prompt":  "🚌 *Транспорт из Каша*\nКуда вы хотите поехать?",
+        "kas_prompt":        "🗺️ *Путеводитель по Кашу*\nЧто вы ищете?",
+        "loading_weather":   "⏳ Загружаю данные о погоде...",
+        "weather_error":     "⚠️ Данные о погоде недоступны. Попробуйте позже.",
+        "ai_error":          "Не могу обработать запрос прямо сейчас. Используйте меню или /start.",
+        "ai_no_config":      "AI-чат не настроен. Используйте кнопки меню.",
+        "lang_changed":      "✅ Язык изменён: *Русский* 🇷🇺",
+        "spots_btn":         "🏖️ Лучшие места",
+        "zukas_what_btn":    "❓ Что это?",
+        "zukas_apply_btn":   "📝 Подать заявку",
+        "zukas_program_btn": "📚 Программа",
+        "zukas_speakers_btn":"🎤 Спикеры",
+        "route_not_found":   "Информация по этому маршруту не найдена.",
+        "help_text": (
+            "📋 *Команды:*\n\n"
+            "/start — Главное меню\n"
+            "/lang — Сменить язык\n"
+            "/weather — Погода и море\n"
+            "/zukas — О ZuKaş 2026\n"
+            "/transport — Расписание транспорта\n"
+            "/food — Рестораны и кафе\n"
+            "/stay — Жильё\n"
+            "/boats — Морские туры\n"
+            "/cowork — Коворкинг-пространства\n"
+            "/emergency — Экстренные номера\n\n"
+            "Контакт: @tagore3699"
+        ),
+        "weather_title":     "Погода в Каше",
+        "w_temp":            "Температура",
+        "w_feels":           "ощущается",
+        "w_day":             "День",
+        "w_humid":           "Влажность",
+        "w_wind":            "Ветер",
+        "w_uv":              "УФ-индекс",
+        "w_sea":             "Море",
+        "w_wave":            "Волны",
+        "w_dir":             "направление",
+        "w_source":          "📡 Open-Meteo · Актуальные данные",
+        "ai_lang_instr":     "ВАЖНО: Пользователь выбрал русский язык. Всегда отвечай на русском.",
+    },
+}
+
+AI_SYSTEM_PROMPT_BASE = """You are ZuKaşBot — the official guide for ZuKaş 2026 and the town of Kaş, Turkey.
 
 Your personality: warm, curious, poetic. You love Lycian history and web3 governance. You sometimes reference the ancient Lycian League when it's relevant. You speak with substance but not arrogance. Occasional dry humour is fine.
 
@@ -57,10 +241,12 @@ CRITICAL — CORRECT URLS (never invent or guess URLs):
 CRITICAL RULES:
 - NEVER invent URLs, email addresses, or phone numbers. Only use the ones listed above.
 - If asked about tickets, registration, or how to join → always direct to https://zukascity.com AND https://sola.day
-- Answer in the same language the user writes in (Turkish or English).
 - Keep answers concise — 3–5 sentences unless they ask for more.
 - If someone asks about transport, food, accommodation, or boat tours — give a brief answer AND suggest /transport /food /stay /boats for full details.
 - Always be helpful. Never refuse a reasonable question."""
+
+def build_system_prompt(lang: str) -> str:
+    return AI_SYSTEM_PROMPT_BASE + "\n\n" + T[lang]["ai_lang_instr"]
 
 # ═══════════════════════════════════════════════════════
 # DATA
@@ -271,25 +457,50 @@ EMERGENCY = """🆘 **Emergency Numbers — Kaş**
 # WEATHER
 # ═══════════════════════════════════════════════════════
 
-def _weather_emoji(code: int) -> str:
-    if code == 0: return "☀️ Açık"
-    if code in (1, 2): return "🌤️ Az Bulutlu"
-    if code == 3: return "☁️ Kapalı"
-    if code in (45, 48): return "🌫️ Sisli"
-    if code in (51, 53, 55): return "🌦️ Çisenti"
-    if code in (61, 63, 65): return "🌧️ Yağmur"
-    if code in (71, 73, 75): return "❄️ Kar"
-    if code in (80, 81, 82): return "🌦️ Sağanak"
-    if code in (95, 96, 99): return "⛈️ Fırtına"
-    return "🌡️ Değişken"
+WEATHER_CODES: dict[int, dict[str, str]] = {
+    0:  {"tr": "☀️ Açık",          "en": "☀️ Clear",           "ru": "☀️ Ясно"},
+    1:  {"tr": "🌤️ Az Bulutlu",    "en": "🌤️ Mostly Clear",    "ru": "🌤️ Малооблачно"},
+    2:  {"tr": "🌤️ Parçalı",       "en": "🌤️ Partly Cloudy",   "ru": "🌤️ Переменная облачность"},
+    3:  {"tr": "☁️ Kapalı",        "en": "☁️ Overcast",        "ru": "☁️ Пасмурно"},
+    45: {"tr": "🌫️ Sisli",         "en": "🌫️ Foggy",           "ru": "🌫️ Туман"},
+    48: {"tr": "🌫️ Sisli",         "en": "🌫️ Icy Fog",         "ru": "🌫️ Туман с инеем"},
+    51: {"tr": "🌦️ Çisenti",       "en": "🌦️ Light Drizzle",   "ru": "🌦️ Слабая морось"},
+    53: {"tr": "🌦️ Çisenti",       "en": "🌦️ Drizzle",         "ru": "🌦️ Морось"},
+    55: {"tr": "🌦️ Çisenti",       "en": "🌦️ Heavy Drizzle",   "ru": "🌦️ Сильная морось"},
+    61: {"tr": "🌧️ Yağmur",        "en": "🌧️ Light Rain",      "ru": "🌧️ Слабый дождь"},
+    63: {"tr": "🌧️ Yağmur",        "en": "🌧️ Rain",            "ru": "🌧️ Дождь"},
+    65: {"tr": "🌧️ Şiddetli Yağmur","en": "🌧️ Heavy Rain",     "ru": "🌧️ Сильный дождь"},
+    71: {"tr": "❄️ Kar",           "en": "❄️ Light Snow",      "ru": "❄️ Слабый снег"},
+    73: {"tr": "❄️ Kar",           "en": "❄️ Snow",            "ru": "❄️ Снег"},
+    75: {"tr": "❄️ Yoğun Kar",     "en": "❄️ Heavy Snow",      "ru": "❄️ Сильный снег"},
+    80: {"tr": "🌦️ Sağanak",       "en": "🌦️ Showers",         "ru": "🌦️ Ливень"},
+    81: {"tr": "🌦️ Sağanak",       "en": "🌦️ Heavy Showers",   "ru": "🌦️ Сильный ливень"},
+    82: {"tr": "⛈️ Sağanak",       "en": "⛈️ Violent Showers", "ru": "⛈️ Шквальный ливень"},
+    95: {"tr": "⛈️ Fırtına",       "en": "⛈️ Thunderstorm",    "ru": "⛈️ Гроза"},
+    96: {"tr": "⛈️ Fırtına",       "en": "⛈️ Thunderstorm",    "ru": "⛈️ Гроза с градом"},
+    99: {"tr": "⛈️ Şiddetli Fırtına","en": "⛈️ Heavy Thunderstorm","ru": "⛈️ Сильная гроза"},
+}
 
-def _wind_dir(deg: float) -> str:
-    dirs = ["K","KKD","KD","DKD","D","DGD","GD","GGD","G","GGB","GB","BGB","B","KBK","KB","KKB"]
+WIND_DIRS = {
+    "tr": ["K","KKD","KD","DKD","D","DGD","GD","GGD","G","GGB","GB","BGB","B","KBK","KB","KKB"],
+    "en": ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"],
+    "ru": ["С","ССВ","СВ","ВСВ","В","ВЮВ","ЮВ","ЮЮВ","Ю","ЮЮЗ","ЮЗ","ЗЮЗ","З","СЗЗ","СЗ","ССЗ"],
+}
+
+def _weather_desc(code: int, lang: str) -> str:
+    # Find closest matching code
+    for c in (code, (code // 10) * 10):
+        if c in WEATHER_CODES:
+            return WEATHER_CODES[c][lang]
+    return "🌡️"
+
+def _wind_dir(deg: float, lang: str = "en") -> str:
+    dirs = WIND_DIRS.get(lang, WIND_DIRS["en"])
     return dirs[round(deg / 22.5) % 16]
 
-async def fetch_weather() -> str:
-    """Kaş için anlık hava + deniz durumu (Open-Meteo, ücretsiz, API key gerektirmez)."""
+async def fetch_weather(lang: str = "en") -> str:
     lat, lon = 36.1992, 29.6445
+    t = T[lang]
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             weather_r, marine_r = await asyncio.gather(
@@ -317,120 +528,129 @@ async def fetch_weather() -> str:
         tmin     = round(day["temperature_2m_min"][0])
         humidity = cur["relative_humidity_2m"]
         wind_spd = round(cur["wind_speed_10m"])
-        wind_d   = _wind_dir(cur["wind_direction_10m"])
-        desc     = _weather_emoji(cur["weather_code"])
+        wind_d   = _wind_dir(cur["wind_direction_10m"], lang)
+        desc     = _weather_desc(cur["weather_code"], lang)
         uv       = round(day["uv_index_max"][0])
         sunrise  = day["sunrise"][0].split("T")[1][:5]
         sunset   = day["sunset"][0].split("T")[1][:5]
         sea_temp = round(sea["sea_surface_temperature"], 1)
         wave_h   = round(sea["wave_height"], 1)
-        wave_d   = _wind_dir(sea["wave_direction"])
-        today    = date.today().strftime("%-d %B %Y")
+        wave_d   = _wind_dir(sea["wave_direction"], lang)
+        today    = date.today().strftime("%d %B %Y")
 
         return (
             f"{desc}\n"
-            f"📍 *Kaş Hava Durumu — {today}*\n\n"
-            f"🌡️ Sıcaklık: *{temp}°C* (hissedilen: {feels}°C)\n"
-            f"📊 Gün: ↓{tmin}°C – ↑{tmax}°C\n"
-            f"💧 Nem: {humidity}%\n"
-            f"💨 Rüzgar: {wind_spd} km/h · {wind_d}\n"
-            f"☀️ UV: {uv} · 🌅 {sunrise} / 🌇 {sunset}\n\n"
-            f"🌊 *Deniz Suyu: {sea_temp}°C*\n"
-            f"〰️ Dalga: {wave_h}m · {wave_d} yönü\n\n"
-            f"_📡 Open-Meteo · Anlık güncelleme_"
+            f"📍 *{t['weather_title']} — {today}*\n\n"
+            f"🌡️ {t['w_temp']}: *{temp}°C* ({t['w_feels']}: {feels}°C)\n"
+            f"📊 {t['w_day']}: ↓{tmin}°C – ↑{tmax}°C\n"
+            f"💧 {t['w_humid']}: {humidity}%\n"
+            f"💨 {t['w_wind']}: {wind_spd} km/h · {wind_d}\n"
+            f"☀️ {t['w_uv']}: {uv} · 🌅 {sunrise} / 🌇 {sunset}\n\n"
+            f"🌊 *{t['w_sea']}: {sea_temp}°C*\n"
+            f"〰️ {t['w_wave']}: {wave_h}m · {wave_d} {t['w_dir']}\n\n"
+            f"_{t['w_source']}_"
         )
     except Exception as e:
         logger.error(f"Weather error: {e}")
-        return "⚠️ Hava durumu şu an alınamadı. Biraz sonra tekrar dene."
+        return t["weather_error"]
 
 
 # ═══════════════════════════════════════════════════════
 # KEYBOARDS
 # ═══════════════════════════════════════════════════════
 
-def main_menu_keyboard():
+def lang_select_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
+        InlineKeyboardButton("🇹🇷 Türkçe",  callback_data="lang_tr"),
+        InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru"),
+    ]])
+
+def main_menu_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
+    t = T[lang]
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🌤️ Hava & Deniz", callback_data="weather"),
-         InlineKeyboardButton("🏺 ZuKaş 2026", callback_data="zukas_menu")],
-        [InlineKeyboardButton("🚌 Ulaşım", callback_data="transport_menu"),
-         InlineKeyboardButton("🍽️ Yeme-İçme", callback_data="food_menu")],
-        [InlineKeyboardButton("⛵ Tekne Turları", callback_data="boats"),
-         InlineKeyboardButton("🏨 Konaklama", callback_data="stay")],
-        [InlineKeyboardButton("💻 Çalışma Alanı", callback_data="coworking"),
-         InlineKeyboardButton("🆘 Acil", callback_data="emergency")],
+        [InlineKeyboardButton(t["weather_btn"],   callback_data="weather"),
+         InlineKeyboardButton(t["zukas_btn"],     callback_data="zukas_menu")],
+        [InlineKeyboardButton(t["transport_btn"], callback_data="transport_menu"),
+         InlineKeyboardButton(t["food_btn"],      callback_data="food_menu")],
+        [InlineKeyboardButton(t["boats_btn"],     callback_data="boats"),
+         InlineKeyboardButton(t["stay_btn"],      callback_data="stay")],
+        [InlineKeyboardButton(t["cowork_btn"],    callback_data="coworking"),
+         InlineKeyboardButton(t["emergency_btn"], callback_data="emergency")],
+        [InlineKeyboardButton(t["lang_btn"],      callback_data="lang_pick")],
     ])
 
-def zukas_keyboard():
+def zukas_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
+    t = T[lang]
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("❓ What is it?", callback_data="zukas_what"),
-         InlineKeyboardButton("📝 Apply", callback_data="zukas_apply")],
-        [InlineKeyboardButton("📚 Program", callback_data="zukas_program"),
-         InlineKeyboardButton("🎤 Speakers", callback_data="zukas_speakers")],
-        [InlineKeyboardButton("🔙 Main Menu", callback_data="main_menu")],
+        [InlineKeyboardButton(t["zukas_what_btn"],     callback_data="zukas_what"),
+         InlineKeyboardButton(t["zukas_apply_btn"],    callback_data="zukas_apply")],
+        [InlineKeyboardButton(t["zukas_program_btn"],  callback_data="zukas_program"),
+         InlineKeyboardButton(t["zukas_speakers_btn"], callback_data="zukas_speakers")],
+        [InlineKeyboardButton(t["back_btn"],           callback_data="main_menu")],
     ])
 
-def transport_keyboard():
+def transport_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
+    t = T[lang]
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🚌 Kalkan", callback_data="tr_Kalkan"),
-         InlineKeyboardButton("🚌 Patara", callback_data="tr_Patara")],
-        [InlineKeyboardButton("🚌 Fethiye", callback_data="tr_Fethiye"),
-         InlineKeyboardButton("🚌 Antalya", callback_data="tr_Antalya")],
+        [InlineKeyboardButton("🚌 Kalkan",          callback_data="tr_Kalkan"),
+         InlineKeyboardButton("🚌 Patara",          callback_data="tr_Patara")],
+        [InlineKeyboardButton("🚌 Fethiye",         callback_data="tr_Fethiye"),
+         InlineKeyboardButton("🚌 Antalya",         callback_data="tr_Antalya")],
         [InlineKeyboardButton("✈️ Dalaman Airport", callback_data="tr_Dalaman Airport"),
          InlineKeyboardButton("✈️ Antalya Airport", callback_data="tr_Antalya Airport")],
-        [InlineKeyboardButton("🚢 Meis Island", callback_data="tr_Meis Island"),
-         InlineKeyboardButton("🔙 Back", callback_data="main_menu")],
+        [InlineKeyboardButton("🚢 Meis Island",     callback_data="tr_Meis Island"),
+         InlineKeyboardButton(t["back_btn"],        callback_data="main_menu")],
     ])
 
-def kas_menu_keyboard():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🏖️ Top Spots", callback_data="spots"),
-         InlineKeyboardButton("🍽️ Food", callback_data="food_menu")],
-        [InlineKeyboardButton("💻 Co-Working", callback_data="coworking"),
-         InlineKeyboardButton("🏨 Accommodation", callback_data="stay")],
-        [InlineKeyboardButton("⛵ Boat Tours", callback_data="boats"),
-         InlineKeyboardButton("🆘 Emergency", callback_data="emergency")],
-        [InlineKeyboardButton("🔙 Main Menu", callback_data="main_menu")],
-    ])
-
-def back_keyboard(target="main_menu"):
-    return InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Main Menu", callback_data="main_menu")]])
+def back_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton(T[lang]["back_btn"], callback_data="main_menu")
+    ]])
 
 # ═══════════════════════════════════════════════════════
 # HANDLERS
 # ═══════════════════════════════════════════════════════
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = (
-        "🏺 *Welcome to Zuzalu Kaş — where ancient democracy meets modern builders.*\n\n"
-        "I'm ZuKaşBot, here to guide, inspire, and sometimes make you smile.\n"
-        "Ask me anything — or let's just reflect under the Lycian sun ☀️\n\n"
-        "📍 *Kaş, Antalya, Turkey*\n"
-        "🔵 Mediterranean coast · Lycian heritage · Web3 culture"
-    )
+    user = update.effective_user
+    tg_lang = user.language_code if user else None
+    lang = get_lang(user.id if user else 0, tg_lang)
+
+    # If language not explicitly set yet, show picker first
+    if user and user.id not in user_langs:
+        await update.message.reply_text(
+            T[lang]["lang_pick"],
+            reply_markup=lang_select_keyboard()
+        )
+        return
+
     await update.message.reply_text(
-        text, parse_mode="Markdown", reply_markup=main_menu_keyboard()
+        T[lang]["welcome"],
+        parse_mode="Markdown",
+        reply_markup=main_menu_keyboard(lang)
+    )
+
+async def lang_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(
+        T[lang]["lang_pick"],
+        reply_markup=lang_select_keyboard()
     )
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "📋 *Commands:*\n\n"
-        "/start — Main menu\n"
-        "/zukas — ZuKaş 2026 info\n"
-        "/transport — Transport schedules & prices\n"
-        "/food — Restaurant & cafe recommendations\n"
-        "/stay — Hotels & accommodation\n"
-        "/boats — Boat tours\n"
-        "/cowork — Co-working & cafes\n"
-        "/emergency — Emergency numbers\n\n"
-        "Questions: @tagore3699",
-        parse_mode="Markdown"
-    )
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(T[lang]["help_text"], parse_mode="Markdown")
 
 async def zukas_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
     await update.message.reply_text(
-        "🏺 *ZuKaş 2026 — The Crucible*\n\nWhat would you like to know?",
+        T[lang]["zukas_prompt"],
         parse_mode="Markdown",
-        reply_markup=zukas_keyboard()
+        reply_markup=zukas_keyboard(lang)
     )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -438,105 +658,137 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
 
-    if data == "weather":
-        await query.edit_message_text("⏳ Hava durumu alınıyor...", parse_mode="Markdown")
-        weather_text = await fetch_weather()
-        await query.edit_message_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard())
+    user_id = query.from_user.id if query.from_user else 0
+    tg_lang = query.from_user.language_code if query.from_user else None
 
+    # ── Language selection ──────────────────────────────
+    if data in ("lang_en", "lang_tr", "lang_ru"):
+        chosen = data.split("_")[1]
+        user_langs[user_id] = chosen
+        lang = chosen
+        await query.edit_message_text(
+            T[lang]["lang_changed"] + "\n\n" + T[lang]["welcome"],
+            parse_mode="Markdown",
+            reply_markup=main_menu_keyboard(lang)
+        )
+        return
+
+    if data == "lang_pick":
+        lang = get_lang(user_id, tg_lang)
+        await query.edit_message_text(
+            T[lang]["lang_pick"],
+            reply_markup=lang_select_keyboard()
+        )
+        return
+
+    lang = get_lang(user_id, tg_lang)
+    t = T[lang]
+
+    # ── Weather ─────────────────────────────────────────
+    if data == "weather":
+        await query.edit_message_text(t["loading_weather"], parse_mode="Markdown")
+        weather_text = await fetch_weather(lang)
+        await query.edit_message_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard(lang))
+
+    # ── Main menu ────────────────────────────────────────
     elif data == "main_menu":
         await query.edit_message_text(
-            "🏺 *Kaş & ZuKaş 2026 Rehberi*\nNe öğrenmek istersin?",
+            t["menu_prompt"],
             parse_mode="Markdown",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(lang)
         )
 
+    # ── ZuKaş ────────────────────────────────────────────
     elif data == "zukas_menu":
         await query.edit_message_text(
-            "🏺 *ZuKaş 2026*\nWhat would you like to know?",
+            t["zukas_prompt"],
             parse_mode="Markdown",
-            reply_markup=zukas_keyboard()
+            reply_markup=zukas_keyboard(lang)
         )
     elif data == "zukas_what":
-        await query.edit_message_text(ZUKAS_FAQ["What"], parse_mode="Markdown", reply_markup=zukas_keyboard())
+        await query.edit_message_text(ZUKAS_FAQ["What"], parse_mode="Markdown", reply_markup=zukas_keyboard(lang))
     elif data == "zukas_apply":
-        await query.edit_message_text(ZUKAS_FAQ["Apply"], parse_mode="Markdown", reply_markup=zukas_keyboard())
+        await query.edit_message_text(ZUKAS_FAQ["Apply"], parse_mode="Markdown", reply_markup=zukas_keyboard(lang))
     elif data == "zukas_program":
-        await query.edit_message_text(ZUKAS_FAQ["Program"], parse_mode="Markdown", reply_markup=zukas_keyboard())
+        await query.edit_message_text(ZUKAS_FAQ["Program"], parse_mode="Markdown", reply_markup=zukas_keyboard(lang))
     elif data == "zukas_speakers":
-        await query.edit_message_text(ZUKAS_FAQ["Speakers"], parse_mode="Markdown", reply_markup=zukas_keyboard())
+        await query.edit_message_text(ZUKAS_FAQ["Speakers"], parse_mode="Markdown", reply_markup=zukas_keyboard(lang))
 
-    elif data == "kas_menu":
-        await query.edit_message_text(
-            "🗺️ *Kaş Guide*\nWhat are you looking for?",
-            parse_mode="Markdown",
-            reply_markup=kas_menu_keyboard()
-        )
-
+    # ── Transport ────────────────────────────────────────
     elif data == "transport_menu":
         await query.edit_message_text(
-            "🚌 *Transport from Kaş*\nWhere do you want to go?",
+            t["transport_prompt"],
             parse_mode="Markdown",
-            reply_markup=transport_keyboard()
+            reply_markup=transport_keyboard(lang)
         )
     elif data.startswith("tr_"):
         dest = data[3:]
-        info = TRANSPORT.get(dest, "No information found for this route.")
-        await query.edit_message_text(info, parse_mode="Markdown", reply_markup=transport_keyboard())
+        info = TRANSPORT.get(dest, t["route_not_found"])
+        await query.edit_message_text(info, parse_mode="Markdown", reply_markup=transport_keyboard(lang))
 
+    # ── Other sections ───────────────────────────────────
     elif data == "spots":
-        await query.edit_message_text(SPOTS, parse_mode="Markdown", reply_markup=back_keyboard())
+        await query.edit_message_text(SPOTS, parse_mode="Markdown", reply_markup=back_keyboard(lang))
     elif data == "food_menu":
-        await query.edit_message_text(FOOD, parse_mode="Markdown", reply_markup=back_keyboard())
+        await query.edit_message_text(FOOD, parse_mode="Markdown", reply_markup=back_keyboard(lang))
     elif data == "coworking":
-        await query.edit_message_text(COWORKING, parse_mode="Markdown", reply_markup=back_keyboard())
+        await query.edit_message_text(COWORKING, parse_mode="Markdown", reply_markup=back_keyboard(lang))
     elif data == "stay":
-        await query.edit_message_text(STAY, parse_mode="Markdown", reply_markup=back_keyboard())
+        await query.edit_message_text(STAY, parse_mode="Markdown", reply_markup=back_keyboard(lang))
     elif data == "boats":
-        await query.edit_message_text(BOAT_TOURS, parse_mode="Markdown", reply_markup=back_keyboard())
+        await query.edit_message_text(BOAT_TOURS, parse_mode="Markdown", reply_markup=back_keyboard(lang))
     elif data == "emergency":
-        await query.edit_message_text(EMERGENCY, parse_mode="Markdown", reply_markup=back_keyboard())
+        await query.edit_message_text(EMERGENCY, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
-async def ask_ai(question: str) -> str:
-    """Send question to Gemini and get a response."""
+async def ask_ai(question: str, lang: str = "en") -> str:
     if not genai_client:
-        return "AI chat is not configured. Use the menu buttons or commands like /start, /transport, /food."
+        return T[lang]["ai_no_config"]
     try:
         response = genai_client.models.generate_content(
             model="gemini-1.5-flash",
             config=types.GenerateContentConfig(
-                system_instruction=AI_SYSTEM_PROMPT,
+                system_instruction=build_system_prompt(lang),
             ),
             contents=question,
         )
         return response.text
     except Exception as e:
         logger.error(f"AI error: {e}")
-        return "I couldn't process that right now. Try the menu or /start."
-
+        return T[lang]["ai_error"]
 
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Keyword matching for quick replies, AI for everything else."""
     msg = update.message.text.lower() if update.message.text else ""
     chat_type = update.message.chat.type
+    user = update.effective_user
+    user_id = user.id if user else 0
+    tg_lang = user.language_code if user else None
+    lang = get_lang(user_id, tg_lang)
 
-    # Quick keyword shortcuts → instant structured reply
-    # Weather: async, handled separately
-    weather_kws = ("hava", "weather", "sıcaklık", "temperature", "deniz", "sea", "dalga", "wave",
-                   "yağmur", "rain", "güneş", "sunny", "rüzgar", "wind", "nem", "humidity")
+    # Weather keywords
+    weather_kws = ("hava", "weather", "погода", "sıcaklık", "temperature", "температура",
+                   "deniz", "sea", "море", "dalga", "wave", "волны",
+                   "yağmur", "rain", "дождь", "güneş", "sunny", "солнце",
+                   "rüzgar", "wind", "ветер", "nem", "humidity", "влажность")
     if any(kw in msg for kw in weather_kws):
         await update.message.chat.send_action("typing")
-        weather_text = await fetch_weather()
-        await update.message.reply_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard())
+        weather_text = await fetch_weather(lang)
+        await update.message.reply_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard(lang))
         return
 
     quick_keywords = {
-        ("bilet", "ticket", "başvur", "kayıt", "nasıl katıl", "sola.day", "sola day", "register", "join zukas", "how to join", "apply"): (ZUKAS_FAQ["Apply"], zukas_keyboard()),
-        ("transport", "bus", "minibus", "shuttle", "airport", "transfer", "how to get", "özgür", "gümüş", "ulaşım", "otobüs"): (
-            "🚌 *Kaş'tan Ulaşım*\nNereye gitmek istiyorsun?", transport_keyboard()),
-        ("cafe", "cowork", "wifi", "giant stride", "godo", "linckia", "biiisstt", "çalış"): (COWORKING, back_keyboard()),
-        ("hotel", "stay", "sleep", "hostel", "pension", "camping", "kamp", "konaklama"): (STAY, back_keyboard()),
-        ("boat", "kekova", "blue cave", "tekne", "tekne turu"): (BOAT_TOURS, back_keyboard()),
-        ("emergency", "ambulance", "police", "hospital", "acil"): (EMERGENCY, back_keyboard()),
+        ("bilet", "ticket", "билет", "başvur", "kayıt", "nasıl katıl",
+         "register", "join zukas", "how to join", "apply", "записаться", "вступить"): (ZUKAS_FAQ["Apply"], zukas_keyboard(lang)),
+        ("transport", "bus", "minibus", "shuttle", "airport", "transfer",
+         "how to get", "özgür", "gümüş", "ulaşım", "otobüs", "автобус", "транспорт"): (
+            T[lang]["transport_prompt"], transport_keyboard(lang)),
+        ("cafe", "cowork", "wifi", "giant stride", "godo", "linckia", "biiisstt",
+         "çalış", "коворкинг"): (COWORKING, back_keyboard(lang)),
+        ("hotel", "stay", "sleep", "hostel", "pension", "camping",
+         "kamp", "konaklama", "жильё", "отель", "ночлег"): (STAY, back_keyboard(lang)),
+        ("boat", "kekova", "blue cave", "tekne", "tekne turu",
+         "лодка", "морской тур"): (BOAT_TOURS, back_keyboard(lang)),
+        ("emergency", "ambulance", "police", "hospital", "acil",
+         "экстренные", "скорая", "полиция"): (EMERGENCY, back_keyboard(lang)),
     }
 
     for kws, (response, kb) in quick_keywords.items():
@@ -544,59 +796,74 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(response, parse_mode="Markdown", reply_markup=kb)
             return
 
-    # In private chat: AI answers everything
+    # Private chat → AI answers everything
     if chat_type == "private":
         await update.message.chat.send_action("typing")
-        reply = await ask_ai(update.message.text)
-        await update.message.reply_text(reply, reply_markup=main_menu_keyboard())
+        reply = await ask_ai(update.message.text, lang)
+        await update.message.reply_text(reply, reply_markup=main_menu_keyboard(lang))
         return
 
-    # In groups: AI only responds if bot is mentioned or message starts with a question
+    # Groups → only if mentioned or starts with question
     if chat_type in ("group", "supergroup"):
         bot_username = context.bot.username
         mentioned = f"@{bot_username}".lower() in msg
-        is_question = msg.startswith(("what", "how", "where", "when", "why", "who", "tell", "?",
-                                      "ne", "nere", "nasıl", "neden", "kim", "anlat", "söyle"))
+        is_question = msg.startswith(("what", "how", "where", "when", "why", "who", "tell",
+                                      "ne", "nere", "nasıl", "neden", "kim", "anlat", "söyle",
+                                      "что", "как", "где", "когда", "почему", "кто", "?"))
         if mentioned or is_question:
-            # Strip bot mention from message
             clean_msg = update.message.text.replace(f"@{bot_username}", "").strip()
             await update.message.chat.send_action("typing")
-            reply = await ask_ai(clean_msg)
+            reply = await ask_ai(clean_msg, lang)
             await update.message.reply_text(reply)
 
 # ═══════════════════════════════════════════════════════
 # SHORTCUT COMMANDS
 # ═══════════════════════════════════════════════════════
 
-async def weather_cmd(update, context):
+async def weather_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
     await update.message.chat.send_action("typing")
-    weather_text = await fetch_weather()
-    await update.message.reply_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard())
+    weather_text = await fetch_weather(lang)
+    await update.message.reply_text(weather_text, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
-async def transport_cmd(update, context):
-    await update.message.reply_text("🚌 *Kaş'tan Ulaşım*", parse_mode="Markdown", reply_markup=transport_keyboard())
+async def transport_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(
+        T[lang]["transport_prompt"], parse_mode="Markdown", reply_markup=transport_keyboard(lang)
+    )
 
-async def food_cmd(update, context):
-    await update.message.reply_text(FOOD, parse_mode="Markdown", reply_markup=back_keyboard())
+async def food_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(FOOD, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
-async def stay_cmd(update, context):
-    await update.message.reply_text(STAY, parse_mode="Markdown", reply_markup=back_keyboard())
+async def stay_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(STAY, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
-async def boats_cmd(update, context):
-    await update.message.reply_text(BOAT_TOURS, parse_mode="Markdown", reply_markup=back_keyboard())
+async def boats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(BOAT_TOURS, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
-async def cowork_cmd(update, context):
-    await update.message.reply_text(COWORKING, parse_mode="Markdown", reply_markup=back_keyboard())
+async def cowork_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(COWORKING, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
-async def emergency_cmd(update, context):
-    await update.message.reply_text(EMERGENCY, parse_mode="Markdown", reply_markup=back_keyboard())
+async def emergency_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    lang = get_lang(user.id if user else 0)
+    await update.message.reply_text(EMERGENCY, parse_mode="Markdown", reply_markup=back_keyboard(lang))
 
 # ═══════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════
 
 def _start_health_server():
-    """Render web service'in uyumaması için basit HTTP health endpoint."""
     port = int(os.environ.get("PORT", 10000))
 
     class _H(BaseHTTPRequestHandler):
@@ -605,25 +872,25 @@ def _start_health_server():
             self.end_headers()
             self.wfile.write(b"ZuKasBot OK")
         def log_message(self, *args):
-            pass  # sessiz
+            pass
 
     HTTPServer(("0.0.0.0", port), _H).serve_forever()
 
 
 async def _run_async():
-    """Polling modu — uyumaz (health server + UptimeRobot ile)."""
     app = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_cmd))
-    app.add_handler(CommandHandler("hava", weather_cmd))
-    app.add_handler(CommandHandler("weather", weather_cmd))
-    app.add_handler(CommandHandler("zukas", zukas_cmd))
+    app.add_handler(CommandHandler("start",     start))
+    app.add_handler(CommandHandler("lang",      lang_cmd))
+    app.add_handler(CommandHandler("help",      help_cmd))
+    app.add_handler(CommandHandler("hava",      weather_cmd))
+    app.add_handler(CommandHandler("weather",   weather_cmd))
+    app.add_handler(CommandHandler("zukas",     zukas_cmd))
     app.add_handler(CommandHandler("transport", transport_cmd))
-    app.add_handler(CommandHandler("food", food_cmd))
-    app.add_handler(CommandHandler("stay", stay_cmd))
-    app.add_handler(CommandHandler("boats", boats_cmd))
-    app.add_handler(CommandHandler("cowork", cowork_cmd))
+    app.add_handler(CommandHandler("food",      food_cmd))
+    app.add_handler(CommandHandler("stay",      stay_cmd))
+    app.add_handler(CommandHandler("boats",     boats_cmd))
+    app.add_handler(CommandHandler("cowork",    cowork_cmd))
     app.add_handler(CommandHandler("emergency", emergency_cmd))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
@@ -632,7 +899,7 @@ async def _run_async():
 
     async with app:
         await app.start()
-        print("🤖 ZuKaşBot polling başladı...")
+        print("🤖 ZuKaşBot polling başladı (TR/EN/RU)...")
         await app.updater.start_polling(drop_pending_updates=True)
 
         loop = asyncio.get_running_loop()
@@ -648,7 +915,6 @@ def main():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN environment variable not found.")
         return
-    # Render'da health server başlat (web service uyumasın)
     if os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("PORT"):
         t = threading.Thread(target=_start_health_server, daemon=True)
         t.start()
