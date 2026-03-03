@@ -594,7 +594,7 @@ async def emergency_cmd(update, context):
 # ═══════════════════════════════════════════════════════
 
 async def _run_async():
-    """Fully async bot runner — compatible with Python 3.14+."""
+    """Polling modu — Background Worker olarak çalışır, uyumaz."""
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -611,34 +611,18 @@ async def _run_async():
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
-    render_url = os.environ.get("RENDER_EXTERNAL_URL")
-    port = int(os.environ.get("PORT", 8443))
-
     stop = asyncio.Event()
 
     async with app:
         await app.start()
-        if render_url:
-            webhook_url = f"{render_url}/webhook"
-            print(f"🌐 Webhook modu: {webhook_url}")
-            await app.updater.start_webhook(
-                listen="0.0.0.0",
-                port=port,
-                url_path="/webhook",
-                webhook_url=webhook_url,
-                drop_pending_updates=True,
-            )
-        else:
-            print("🤖 Polling modu (local)...")
-            await app.updater.start_polling(drop_pending_updates=True)
+        print("🤖 ZuKaşBot polling başladı...")
+        await app.updater.start_polling(drop_pending_updates=True)
 
-        # PTB v21 has no updater.idle() — block until SIGTERM/SIGINT
         loop = asyncio.get_running_loop()
         loop.add_signal_handler(signal.SIGTERM, stop.set)
         loop.add_signal_handler(signal.SIGINT, stop.set)
         await stop.wait()
 
-        # Must call stop() before async with app: __aexit__ calls shutdown()
         await app.updater.stop()
         await app.stop()
 
