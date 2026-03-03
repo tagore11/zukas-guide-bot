@@ -533,9 +533,10 @@ async def fetch_weather(lang: str = "en") -> str:
         uv       = round(day["uv_index_max"][0])
         sunrise  = day["sunrise"][0].split("T")[1][:5]
         sunset   = day["sunset"][0].split("T")[1][:5]
-        sea_temp = round(sea["sea_surface_temperature"], 1)
-        wave_h   = round(sea["wave_height"], 1)
-        wave_d   = _wind_dir(sea["wave_direction"], lang)
+        sea_temp = round(sea["sea_surface_temperature"] or 0, 1)
+        wave_h   = round(sea["wave_height"] or 0, 1)
+        wave_dir_val = sea.get("wave_direction")
+        wave_d   = _wind_dir(wave_dir_val, lang) if wave_dir_val is not None else "—"
         today    = date.today().strftime("%d %B %Y")
 
         return (
@@ -744,12 +745,16 @@ async def ask_ai(question: str, lang: str = "en") -> str:
     if not genai_client:
         return T[lang]["ai_no_config"]
     try:
-        response = genai_client.models.generate_content(
-            model="gemini-1.5-flash",
-            config=types.GenerateContentConfig(
-                system_instruction=build_system_prompt(lang),
-            ),
-            contents=question,
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: genai_client.models.generate_content(
+                model="gemini-1.5-flash",
+                config=types.GenerateContentConfig(
+                    system_instruction=build_system_prompt(lang),
+                ),
+                contents=question,
+            )
         )
         return response.text
     except Exception as e:
@@ -915,7 +920,7 @@ def main():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN environment variable not found.")
         return
-    if os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("PORT"):
+    if os.environ.get("PORT"):
         t = threading.Thread(target=_start_health_server, daemon=True)
         t.start()
         print(f"✅ Health server: port {os.environ.get('PORT', 10000)}")
