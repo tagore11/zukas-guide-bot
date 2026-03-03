@@ -16,7 +16,9 @@ import os
 import asyncio
 import signal
 import logging
+import threading
 from datetime import date
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import httpx
 from google import genai
 from google.genai import types
@@ -593,8 +595,23 @@ async def emergency_cmd(update, context):
 # MAIN
 # ═══════════════════════════════════════════════════════
 
+def _start_health_server():
+    """Render web service'in uyumaması için basit HTTP health endpoint."""
+    port = int(os.environ.get("PORT", 10000))
+
+    class _H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"ZuKasBot OK")
+        def log_message(self, *args):
+            pass  # sessiz
+
+    HTTPServer(("0.0.0.0", port), _H).serve_forever()
+
+
 async def _run_async():
-    """Polling modu — Background Worker olarak çalışır, uyumaz."""
+    """Polling modu — uyumaz (health server + UptimeRobot ile)."""
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -631,6 +648,11 @@ def main():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN environment variable not found.")
         return
+    # Render'da health server başlat (web service uyumasın)
+    if os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("PORT"):
+        t = threading.Thread(target=_start_health_server, daemon=True)
+        t.start()
+        print(f"✅ Health server: port {os.environ.get('PORT', 10000)}")
     asyncio.run(_run_async())
 
 
