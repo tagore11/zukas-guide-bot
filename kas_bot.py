@@ -919,18 +919,7 @@ def main():
         t = threading.Thread(target=_start_health_server, daemon=True)
         t.start()
         print(f"✅ Health server: port {os.environ.get('PORT', 10000)}")
-    import time
-    while True:
-        try:
-            asyncio.run(_run_async())
-        except (KeyboardInterrupt, SystemExit):
-            break
-        except Exception as e:
-            logger.error(f"Bot crashed ({e}), restarting in 5s...")
-            time.sleep(5)
-        else:
-            logger.info("Bot stopped cleanly, restarting in 5s...")
-            time.sleep(5)
+    asyncio.run(_run_async())
 
 
 if __name__ == "__main__":
