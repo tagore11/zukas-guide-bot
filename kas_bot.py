@@ -900,7 +900,7 @@ async def _run_async():
     async with app:
         await app.start()
         print("🤖 ZuKaşBot polling başladı (TR/EN/RU)...")
-        await app.updater.start_polling(drop_pending_updates=True)
+        await app.updater.start_polling(drop_pending_updates=False)
 
         loop = asyncio.get_running_loop()
         loop.add_signal_handler(signal.SIGTERM, stop.set)
@@ -919,7 +919,18 @@ def main():
         t = threading.Thread(target=_start_health_server, daemon=True)
         t.start()
         print(f"✅ Health server: port {os.environ.get('PORT', 10000)}")
-    asyncio.run(_run_async())
+    import time
+    while True:
+        try:
+            asyncio.run(_run_async())
+        except (KeyboardInterrupt, SystemExit):
+            break
+        except Exception as e:
+            logger.error(f"Bot crashed ({e}), restarting in 5s...")
+            time.sleep(5)
+        else:
+            logger.info("Bot stopped cleanly, restarting in 5s...")
+            time.sleep(5)
 
 
 if __name__ == "__main__":
