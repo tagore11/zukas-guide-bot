@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+genai_client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1"}) if GEMINI_API_KEY else None
 
 # ═══════════════════════════════════════════════════════
 # LANGUAGE SUPPORT
