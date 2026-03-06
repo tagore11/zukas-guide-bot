@@ -749,7 +749,7 @@ async def ask_ai(question: str, lang: str = "en") -> str:
         response = await loop.run_in_executor(
             None,
             lambda: genai_client.models.generate_content(
-                model="gemini-1.5-flash-8b",
+                model="gemini-2.5-flash-lite",
                 config=types.GenerateContentConfig(
                     system_instruction=build_system_prompt(lang),
                 ),
