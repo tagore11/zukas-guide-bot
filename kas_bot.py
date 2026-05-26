@@ -17,7 +17,7 @@ import asyncio
 import signal
 import logging
 import threading
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import httpx
 from google import genai
@@ -882,6 +882,138 @@ def _start_health_server():
     HTTPServer(("0.0.0.0", port), _H).serve_forever()
 
 
+# ═══════════════════════════════════════════════════════
+# GÜNLÜK BRİFİNG SİSTEMİ (Sait — ZuKaş/ZuGov)
+# Sabah 08:03 + Akşam 21:07 (UTC+8 / Asia/Kuala_Lumpur)
+# ═══════════════════════════════════════════════════════
+
+SAIT_CHAT_ID = 647630089
+# (saat, dakika, tür) — UTC. 00:03 UTC = 08:03 KL, 13:07 UTC = 21:07 KL
+DAILY_TIMES = [(0, 3, "morning"), (13, 7, "evening")]
+
+MORNING_PROMPT = (
+    "Bugün için Türkçe bir 'Sabah Görev Brifingi' yaz. Düz metin + emoji, mobil-dostu, "
+    "Markdown yıldızı/başlığı KULLANMA. Bölümler:\n"
+    "1) BUGÜNÜN RUTİNİ (her madde başına ☐): sosyal medya içeriği (1 thread fikri); "
+    "Twitter @msaidgumus3 1 ana tweet + 3 reply; CapCut 1 kısa video/edit; "
+    "1 akademik kaynağı içeriğe dönüştür; 3 outreach mesajı (Appreciation→check-in→konu); "
+    "ZuGov/Grounding Engine 1 somut adım.\n"
+    "2) GÜNÜN 3 KAYNAĞI: Google arama ile son ~12 ayda güncel 3 makale/haber bul "
+    "(plurality & digital governance, network state, DAO/onchain governance, AI epistemik çöküş/Acemoglu, "
+    "commons/Bauwens, futarchy/MACI/zk-voting, Vitalik Buterin). Her biri: başlık + LİNK + 1-2 cümle Türkçe özet "
+    "+ 'ZuGov bağı' 1 cümle.\n"
+    "3) GÜNÜN TWEET TASLAĞI: @msaidgumus3 için manifesto tonunda 1 tweet (<=280 karakter).\n"
+    "4) İÇERİK FİKRİ: 1 net sosyal medya fikri (format + hook).\n"
+    "Sonuna kısa hatırlatma: Glen Weyl + Michel Bauwens'e pending mesajlar yeni tarihle (9-19 Eylül 2026) gönderilecek.\n"
+    "Bağlam: ZuKaş 2026 = 9-19 Eylül 2026, Kaş, Zuzalu-network pop-up şehri. ZuGov = Plurality governance SDK + "
+    "'Grounding Engine' (AI epistemik denetçi, oy yetkisi sıfır)."
+)
+
+EVENING_PROMPT = (
+    "Türkçe bir 'Akşam Check-in' yaz. Düz metin + emoji, Markdown yıldızı KULLANMA. Bölümler:\n"
+    "1) BUGÜN NE OLDU? (her madde başına ☐, soru kipinde): sosyal medya içeriği; Twitter tweet+reply; "
+    "CapCut video; 3 kaynak özeti; 3 outreach mesajı; ZuGov adımı — yapıldı mı?\n"
+    "2) YARINA HAZIRLIK: Google arama ile yarınki içerik için 1 trend konu/güncel haber bul "
+    "(web3 governance, plurality, network state, Türkiye crypto/teknoloji). 1-2 cümle + neden ZuKaş/ZuGov için ilgili.\n"
+    "3) YARININ 3 ÖNCELİĞİ: net 3 madde.\n"
+    "Sonuna hatırlatma: Obsidian post-task protokolü (TODO/MEMORY/CHANGELOG) + Glen Weyl & Michel Bauwens pending mesajları (9-19 Eylül 2026).\n"
+    "Bağlam: ZuKaş 2026 = 9-19 Eylül 2026, Kaş. ZuGov = Plurality governance SDK + Grounding Engine. Twitter @msaidgumus3."
+)
+
+BRIEFING_SYS = (
+    "Sen Sait Gümüş'ün günlük içerik & strateji asistanısın. Türkçe yaz, kısa ve net ol, "
+    "mobil ekranda okunaklı düz metin + emoji kullan. Markdown başlık (#) veya kalın (**) KULLANMA."
+)
+
+
+# Brifing için ayrı client: varsayılan (v1beta) sürüm — grounding + system_instruction destekler
+briefing_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+
+
+async def _generate_briefing(kind: str) -> str | None:
+    if not briefing_client:
+        return None
+    prompt = MORNING_PROMPT if kind == "morning" else EVENING_PROMPT
+    loop = asyncio.get_event_loop()
+
+    def _gen():
+        cfg_grounded = types.GenerateContentConfig(
+            system_instruction=BRIEFING_SYS,
+            tools=[types.Tool(google_search=types.GoogleSearch())],
+        )
+        try:
+            return briefing_client.models.generate_content(
+                model="gemini-2.5-flash", config=cfg_grounded, contents=prompt,
+            )
+        except Exception as e:
+            logger.error(f"Briefing grounded gen failed: {e}; retrying without search")
+            return briefing_client.models.generate_content(
+                model="gemini-2.5-flash",
+                config=types.GenerateContentConfig(system_instruction=BRIEFING_SYS),
+                contents=prompt,
+            )
+
+    response = await loop.run_in_executor(None, _gen)
+    return response.text
+
+
+def _chunk_text(text: str, limit: int = 4000) -> list[str]:
+    chunks, cur = [], ""
+    for line in text.split("\n"):
+        if len(cur) + len(line) + 1 > limit:
+            if cur:
+                chunks.append(cur)
+            cur = line
+        else:
+            cur = f"{cur}\n{line}" if cur else line
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
+async def _send_briefing(app, kind: str):
+    text = await _generate_briefing(kind)
+    if not text:
+        logger.error("Briefing skipped: no genai client / empty response")
+        return
+    header = "🌅 SABAH GÖREV BRİFİNGİ" if kind == "morning" else "🌙 AKŞAM CHECK-IN"
+    today = datetime.now(timezone(timedelta(hours=8))).strftime("%d.%m.%Y")
+    full = f"{header} — {today}\n\n{text}\n\n— ZuKaş Asistanı 🏛️"
+    for chunk in _chunk_text(full, 4000):
+        await app.bot.send_message(chat_id=SAIT_CHAT_ID, text=chunk)
+        await asyncio.sleep(0.4)
+    logger.info(f"Briefing '{kind}' sent to {SAIT_CHAT_ID}")
+
+
+def _next_fire(now_utc: datetime):
+    best = None
+    for h, m, kind in DAILY_TIMES:
+        t = now_utc.replace(hour=h, minute=m, second=0, microsecond=0)
+        if t <= now_utc:
+            t += timedelta(days=1)
+        if best is None or t < best[0]:
+            best = (t, kind)
+    return best
+
+
+async def _daily_scheduler(app):
+    await asyncio.sleep(5)
+    logger.info("📅 Günlük brifing zamanlayıcı başladı (08:03 + 21:07 KL)")
+    while True:
+        now = datetime.now(timezone.utc)
+        fire_at, kind = _next_fire(now)
+        wait = max((fire_at - now).total_seconds(), 1)
+        logger.info(f"Sonraki brifing '{kind}': {fire_at.isoformat()} ({wait/3600:.1f}s sonra)")
+        try:
+            await asyncio.sleep(wait)
+            await _send_briefing(app, kind)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.error(f"Brifing döngü hatası: {e}")
+        await asyncio.sleep(70)  # aynı dakikada çift tetiklemeyi önle
+
+
 async def _run_async():
     app = Application.builder().token(BOT_TOKEN).build()
 
@@ -907,11 +1039,14 @@ async def _run_async():
         print("🤖 ZuKaşBot polling başladı (TR/EN/RU)...")
         await app.updater.start_polling(drop_pending_updates=False)
 
+        briefing_task = asyncio.create_task(_daily_scheduler(app))
+
         loop = asyncio.get_running_loop()
         loop.add_signal_handler(signal.SIGTERM, stop.set)
         loop.add_signal_handler(signal.SIGINT, stop.set)
         await stop.wait()
 
+        briefing_task.cancel()
         await app.updater.stop()
         await app.stop()
 
