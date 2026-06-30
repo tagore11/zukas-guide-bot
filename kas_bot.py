@@ -888,8 +888,8 @@ def _start_health_server():
 # ═══════════════════════════════════════════════════════
 
 SAIT_CHAT_ID = 647630089
-# (saat, dakika, tür) — UTC. 00:03 UTC = 08:03 KL, 13:07 UTC = 21:07 KL
-DAILY_TIMES = [(0, 3, "morning"), (13, 7, "evening")]
+# (saat, dakika, tür) — UTC. 00:03 UTC = 08:03 KL, 01:00 UTC = 09:00 KL, 13:07 UTC = 21:07 KL
+DAILY_TIMES = [(0, 3, "morning"), (1, 0, "zukas_x"), (13, 7, "evening")]
 
 MORNING_PROMPT = (
     "Bugün için Türkçe bir 'Sabah Görev Brifingi' yaz. Düz metin + emoji, mobil-dostu, "
@@ -925,6 +925,40 @@ BRIEFING_SYS = (
     "mobil ekranda okunaklı düz metin + emoji kullan. Markdown başlık (#) veya kalın (**) KULLANMA."
 )
 
+# ── ZuKaş X Monitor (skill: zukas-x-monitor) — @zuzalukas günlük içerik taraması ──
+ZUKAS_X_SYS = (
+    "Sen @zuzalukas (ZuKaş etkinlik hesabı) için içerik motorusun. Çerçeve/etiketleri "
+    "Türkçe yaz ama TWEET METİNLERİNİ İNGİLİZCE yaz. Mobil-dostu düz metin + emoji, "
+    "Markdown başlık (#) veya kalın (**) KULLANMA. ASLA otomatik tweet atmazsın; sadece "
+    "Sait'in onaylayıp kendisinin paylaşacağı taslak üretirsin."
+)
+
+ZUKAS_X_PROMPT = (
+    "Google arama ile son 24-48 saatin TAZE sinyallerini dört hatta tara ve @zuzalukas için "
+    "paylaşıma HAZIR İngilizce tweet taslakları üret:\n"
+    "A) Zu / pop-up city ekosistemi (Zuzalu, Edge City, Network School, pop-up village, network state, d/acc)\n"
+    "B) Localism (yerelcilik, bioregionalism, place-based governance, yerel egemenlik)\n"
+    "C) Cosmolocalism (cosmo-local, DGML design-global-manufacture-local, commons, P2P/Bauwens)\n"
+    "D) Kaş / Antalya / Likya (Kaş etkinlikleri, Lycian League/Way, yerel kültür)\n\n"
+    "SEÇİM: Sadece gerçekten taze + güçlü ve ZuKaş tezine ORGANİK köprü kuran 1-3 fırsat seç. "
+    "Zayıf gün varsa 'Bugün güçlü sinyal yok' yaz, içerik UYDURMA. Uydurma URL YASAK — sadece aramada çıkan gerçek linkler.\n\n"
+    "SES (ZuKaş manifesto — ZORUNLU): Kısa, deklaratif İngilizce. 'We' baskın ses. ÖNCE kırık olanı "
+    "adlandır, sonra çözümü öner — asla vizyonla açma. Spesifik failure mode isimlendir. "
+    "YASAK: başka projeyle karşılaştırma/atıf; kişi/kapasite sayısı; 'revolutionary/transformational/"
+    "game-changing'; 'it's not a conference/event/ticket' (hiçbir formda). CTA daima 'Apply → zukascity.com'. "
+    "Her tweet 280 karakter altı ve bağımsız okunabilir. Yerinde sözlük: w/acc, Grounding Engine, "
+    "Synthetic Futarchy, Genesis Nodes (jargonla AÇMA).\n\n"
+    "FORMAT (her fırsat için):\n"
+    "━━━ FIRSAT n — [hat: Zu/Localism/Cosmolocalism/Kaş]\n"
+    "📰 Sinyal: tek cümle (ne oldu + neden taze)\n"
+    "🔗 Kaynak: gerçek url\n"
+    "✍️ Post (EN) — Varyant A (keskin/diagnostic): <tweet>\n"
+    "Varyant B (sakin/gözlemsel): <tweet>\n"
+    "💡 Neden işe yarar: tek satır (hangi failure mode / ZuKaş tezi)\n\n"
+    "Bağlam: ZuKaş 2026 = 9-19 Eylül 2026, Kaş, 'Ancient Roots, Future Protocols'. "
+    "ZuGov = Plurality governance SDK + Grounding Engine (AI epistemik denetçi, oy yetkisi sıfır)."
+)
+
 
 # Brifing için ayrı client: varsayılan (v1beta) sürüm — grounding + system_instruction destekler
 briefing_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
@@ -933,12 +967,14 @@ briefing_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else No
 async def _generate_briefing(kind: str) -> str | None:
     if not briefing_client:
         return None
-    prompt = MORNING_PROMPT if kind == "morning" else EVENING_PROMPT
+    prompts = {"morning": MORNING_PROMPT, "evening": EVENING_PROMPT, "zukas_x": ZUKAS_X_PROMPT}
+    prompt = prompts.get(kind, MORNING_PROMPT)
+    sys_instr = ZUKAS_X_SYS if kind == "zukas_x" else BRIEFING_SYS
     loop = asyncio.get_event_loop()
 
     def _gen():
         cfg_grounded = types.GenerateContentConfig(
-            system_instruction=BRIEFING_SYS,
+            system_instruction=sys_instr,
             tools=[types.Tool(google_search=types.GoogleSearch())],
         )
         try:
@@ -949,7 +985,7 @@ async def _generate_briefing(kind: str) -> str | None:
             logger.error(f"Briefing grounded gen failed: {e}; retrying without search")
             return briefing_client.models.generate_content(
                 model="gemini-2.5-flash",
-                config=types.GenerateContentConfig(system_instruction=BRIEFING_SYS),
+                config=types.GenerateContentConfig(system_instruction=sys_instr),
                 contents=prompt,
             )
 
@@ -976,9 +1012,18 @@ async def _send_briefing(app, kind: str):
     if not text:
         logger.error("Briefing skipped: no genai client / empty response")
         return
-    header = "🌅 SABAH GÖREV BRİFİNGİ" if kind == "morning" else "🌙 AKŞAM CHECK-IN"
+    headers = {
+        "morning": "🌅 SABAH GÖREV BRİFİNGİ",
+        "evening": "🌙 AKŞAM CHECK-IN",
+        "zukas_x": "🟦 ZuKaş X — @zuzalukas içerik taraması",
+    }
+    header = headers.get(kind, "🗒️ BRİFİNG")
+    footer = (
+        "Onayladığını @zuzalukas'tan paylaş. Otomatik tweet ATILMAZ."
+        if kind == "zukas_x" else "— ZuKaş Asistanı 🏛️"
+    )
     today = datetime.now(timezone(timedelta(hours=8))).strftime("%d.%m.%Y")
-    full = f"{header} — {today}\n\n{text}\n\n— ZuKaş Asistanı 🏛️"
+    full = f"{header} — {today}\n\n{text}\n\n{footer}"
     for chunk in _chunk_text(full, 4000):
         await app.bot.send_message(chat_id=SAIT_CHAT_ID, text=chunk)
         await asyncio.sleep(0.4)
@@ -998,7 +1043,7 @@ def _next_fire(now_utc: datetime):
 
 async def _daily_scheduler(app):
     await asyncio.sleep(5)
-    logger.info("📅 Günlük brifing zamanlayıcı başladı (08:03 + 21:07 KL)")
+    logger.info("📅 Günlük brifing zamanlayıcı başladı (08:03 brifing + 09:00 ZuKaş X + 21:07 KL)")
     while True:
         now = datetime.now(timezone.utc)
         fire_at, kind = _next_fire(now)
