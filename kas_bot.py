@@ -889,8 +889,7 @@ def _start_health_server():
 
 SAIT_CHAT_ID = 647630089
 # (saat, dakika, tür) — UTC. 00:03 UTC = 08:03 KL, 01:00 UTC = 09:00 KL, 13:07 UTC = 21:07 KL
-# TODO(geri al): zukas_x geçici olarak 09:38 UTC test atışına alındı (30 Haz). Normal: (1, 0, "zukas_x")
-DAILY_TIMES = [(0, 3, "morning"), (9, 38, "zukas_x"), (13, 7, "evening")]
+DAILY_TIMES = [(0, 3, "morning"), (1, 0, "zukas_x"), (13, 7, "evening")]
 
 MORNING_PROMPT = (
     "Bugün için Türkçe bir 'Sabah Görev Brifingi' yaz. Düz metin + emoji, mobil-dostu, "
