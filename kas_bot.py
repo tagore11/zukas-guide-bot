@@ -228,19 +228,19 @@ Your personality: warm, curious, poetic. You love Lycian history and web3 govern
 You know deeply:
 - Kaş, Antalya, Turkey: beaches (Kaputaş, Küçük Çakıl), Lycian rock tombs, ancient theatre, Lycian Way (540 km trail), diving spots, Meis Island ferry
 - Lycian civilization: the Lycian League (400 BC) was the world's first federal proportional democracy, and influenced the US Constitution. Key values: isonomia, shared governance, city-state federalism.
-- ZuKaş 2026: "The Crucible" — a 30-day residency for 150 selected builders (Genesis Nodes), April 10 – May 10, 2026, in Kaş. Application-based, no open ticket sales.
-- Glen Weyl (Plurality creator) is attending for 1 week.
+- ZuKaş 2026 "Season 02: The Crucible" — a Zuzalu-network pop-up city, September 9–20, 2026 (12 days), in Kaş. Genesis Nodes (full 16-day/main track) and Visiting Residents (4–8 day window) apply via the site; selection-based, no open ticket sales.
 - The Grounding Engine: AI epistemic auditor — zero voting/veto power, pure epistemic overlay. Part of ZuGov open-source governance SDK.
 - Web3/governance: Plurality, quadratic voting, MACI, ZK proofs, DAOs, coordination theory.
 
 CRITICAL — CORRECT URLS (never invent or guess URLs):
-- ZuKaş website & application: https://zukascity.com
-- ZuKaş tickets/registration: https://sola.day (search ZuKaş)
-- Contact: @tagore3699 on Telegram
+- ZuKaş website & application: https://zukas.live (Apply button)
+- Arrival guide (airports/transfers/waypoints): https://zukas.live/arrival
+- Telegram channel: https://t.me/zuzalukas
+- Contact: info@zukas.live
 
 CRITICAL RULES:
 - NEVER invent URLs, email addresses, or phone numbers. Only use the ones listed above.
-- If asked about tickets, registration, or how to join → always direct to https://zukascity.com AND https://sola.day
+- If asked about tickets, registration, or how to join → always direct to https://zukas.live
 - Keep answers concise — 3–5 sentences unless they ask for more.
 - If someone asks about transport, food, accommodation, or boat tours — give a brief answer AND suggest /transport /food /stay /boats for full details.
 - Always be helpful. Never refuse a reasonable question."""
@@ -384,33 +384,30 @@ BOAT_TOURS = """⛵ **Boat Tours from Kaş**
 ZUKAS_FAQ = {
     "What": """🏺 **What is ZuKaş 2026?**
 
-A 30-day epistemic experiment — on the very land where the Lycian League was born.
+Season 02 — "The Crucible." A Zuzalu-network pop-up city on the very land where the Lycian League was born.
 
-📅 April 10 – May 10, 2026
+📅 September 9–20, 2026 (12 days)
 📍 Kaş, Antalya, Turkey
-👥 150 Genesis Nodes (application-based selection)
+👥 Genesis Nodes (full 16-day track) & Visiting Residents (4–8 day window)
 
 The Lycian League established the world's first known federal proportional representation system on this coastline 2,400 years ago. We are recreating that experiment with ZK proofs, MACI voting, and the Plurality SDK.
 
 No open ticket sales. Selection-based only.
 
-🎟 Register: [sola.day](https://sola.day) · 🌐 Apply: [zukascity.com](https://zukascity.com)""",
+🌐 Apply: [zukas.live](https://zukas.live)""",
 
     "Apply": """📝 **Join ZuKaş 2026 — The Crucible**
 
 No open ticket sales. Application-based selection only.
 
-🎟 **Register / Ticket:** [sola.day](https://sola.day) → search "ZuKaş"
-🌐 **Full info & apply:** [zukascity.com](https://zukascity.com)
-📬 **Questions:** @tagore3699
+🌐 **Full info & apply:** [zukas.live](https://zukas.live)
+📬 **Questions:** info@zukas.live
 
-✅ Who we're looking for:
-• Governance architects & researchers
-• ZK / identity engineers
-• Web3 builders & coordination theorists
-• Anyone serious about epistemic infrastructure
+✅ Two tracks:
+• **Genesis Node** — full 16 days, September 9–20
+• **Visiting Resident** — choose a 4–8 day window
 
-150 Genesis Nodes. April 10 – May 10, 2026. Kaş, Turkey.""",
+September 9–20, 2026. Kaş, Turkey.""",
 
     "Program": """📚 **ZuKaş 2026 Program**
 
@@ -434,14 +431,13 @@ Physical + digital coordination experiments""",
 
     "Speakers": """🎤 **ZuKaş 2026 Speakers**
 
-⭐ **Glen Weyl** — Creator of Plurality
-Confirmed — attending for 1 week with his family
+⭐ **Vitalik Buterin** — Ethereum Co-founder
+Season 01 keynote
 
-🌐 **Michel Bauwens** — P2P Foundation
-Returning from 2025 edition
+🌐 **Vít Jedlička** — President of Liberland
 
 More speakers to be announced.
-Follow updates: zukascity.com""",
+Follow updates: zukas.live""",
 }
 
 EMERGENCY = """🆘 **Emergency Numbers — Kaş**
@@ -952,7 +948,7 @@ ZUKAS_X_PROMPT = (
     "SES (ZuKaş manifesto — ZORUNLU): Kısa, deklaratif İngilizce. 'We' baskın ses. ÖNCE kırık olanı "
     "adlandır, sonra çözümü öner — asla vizyonla açma. Spesifik failure mode isimlendir. "
     "YASAK: başka projeyle karşılaştırma/atıf; kişi/kapasite sayısı; 'revolutionary/transformational/"
-    "game-changing'; 'it's not a conference/event/ticket' (hiçbir formda). CTA daima 'Apply → zukascity.com'. "
+    "game-changing'; 'it's not a conference/event/ticket' (hiçbir formda). CTA daima 'Apply → zukas.live'. "
     "Her tweet 280 karakter altı ve bağımsız okunabilir. Yerinde sözlük: w/acc, Grounding Engine, "
     "Synthetic Futarchy, Genesis Nodes (jargonla AÇMA).\n\n"
     "FORMAT (her fırsat için):\n"
