@@ -258,7 +258,7 @@ TRANSPORT = {
     "Fethiye": "🚌 Kaş → Fethiye | Bus | 150₺ | 2h 50min\n📞 +902428361020\n⏰ 07:00, 10:00, 13:00, 16:00, 19:00",
     "Antalya": "🚌 Kaş → Antalya (via otogar) | Bus | ≈450₺ | 3.5-4h\n📞 Kaş Otogarı: +90 242 836 10 20\nNote: Antalya airport and Antalya otogar are on opposite sides of the city — a separate taxi/tram leg is needed between them.",
     "Dalaman Airport": (
-        "✈️ Kaş ⇄ Dalaman Airport (DLM) | ~2h\n\n"
+        "✈️ Kaş ⇄ Dalaman Airport (DLM) | ~2.5h\n\n"
         "🚐 *Özgür Turizm* — Shared shuttle ≈1,000₺/person, private on request\n"
         "📞 +90 534 960 4980 | 💬 wa.me/905326450447 | kasozgurturizm.com\n\n"
         "🚐 *Kaş Gümüş Travel* — Shared shuttle ≈1,000₺/person, private/VIP from ≈4,000₺/vehicle\n"
