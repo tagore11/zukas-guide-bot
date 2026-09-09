@@ -256,23 +256,22 @@ TRANSPORT = {
     "Kalkan": "🚌 Kaş → Kalkan | Minibus | 45₺ | 35 min\nVia Kaputaş Beach. Departs from Kaş Bus Terminal.\n⏰ 07:30, 08:30, 09:30, 10:30, 12:00, 13:30, 15:00, 16:30, 18:00, 19:30",
     "Patara": "🚌 Kaş → Patara | Minibus | 60₺ | 45 min\nSummer season (April–October).\n⏰ 08:00, 09:30, 11:00, 13:00, 15:00, 17:00",
     "Fethiye": "🚌 Kaş → Fethiye | Bus | 150₺ | 2h 50min\n📞 +902428361020\n⏰ 07:00, 10:00, 13:00, 16:00, 19:00",
-    "Antalya": "🚌 Kaş → Antalya | Bus | 200₺ | 3h 30min\n📞 +902428361020\n⏰ 06:30, 08:00, 09:30, 11:00, 13:00, 15:00, 17:00, 19:00",
+    "Antalya": "🚌 Kaş → Antalya (via otogar) | Bus | ≈450₺ | 3.5-4h\n📞 Kaş Otogarı: +90 242 836 10 20\nNote: Antalya airport and Antalya otogar are on opposite sides of the city — a separate taxi/tram leg is needed between them.",
     "Dalaman Airport": (
-        "✈️ Kaş → Dalaman Airport (GZP) | ~2h 15min\n\n"
-        "🚐 *Özgür Turizm* — Shuttle & private transfers\n"
-        "📞 +90 534 960 4980 | kasozgurturizm.com\n"
-        "Departures from Kaş: 15:00 (shared shuttle)\n\n"
-        "🚐 *Kaş Gümüş Turizm* — Shuttle 600₺ / private VIP\n"
-        "📞 +90 242 836 25 04 | kasgumustravel.com\n"
-        "Departures: 04:30, 10:00, 18:00"
+        "✈️ Kaş ⇄ Dalaman Airport (DLM) | ~2h\n\n"
+        "🚐 *Özgür Turizm* — Shared shuttle ≈1,000₺/person, private on request\n"
+        "📞 +90 534 960 4980 | 💬 wa.me/905326450447 | kasozgurturizm.com\n\n"
+        "🚐 *Kaş Gümüş Travel* — Shared shuttle ≈1,000₺/person, private/VIP from ≈4,000₺/vehicle\n"
+        "📞 +90 242 836 25 04 | 💬 wa.me/905466122020 | kasgumustravel.com\n\n"
+        "Message your flight number ahead to confirm pickup. Rates shift by season — confirm at booking."
     ),
     "Antalya Airport": (
-        "✈️ Kaş → Antalya Airport (AYT) | ~3h 30min\n\n"
-        "🚐 *Özgür Turizm* — Shuttle & private\n"
-        "📞 +90 534 960 4980 | kasozgurturizm.com\n\n"
-        "🚐 *Kaş Gümüş Turizm* — Private & VIP\n"
-        "📞 +90 242 836 25 04 | kasgumustravel.com\n"
-        "⏰ Contact for schedules"
+        "✈️ Kaş ⇄ Antalya Airport (AYT) | ~3.5-4h\n\n"
+        "🚐 *Özgür Turizm* — Shuttle & private, direct from the airport (skips the otogar)\n"
+        "📞 +90 534 960 4980 | 💬 wa.me/905326450447 | kasozgurturizm.com\n\n"
+        "🚐 *Kaş Gümüş Travel* — Private & VIP, direct from the airport\n"
+        "📞 +90 242 836 25 04 | 💬 wa.me/905466122020 | kasgumustravel.com\n"
+        "⏰ Contact for current schedules/pricing"
     ),
     "Meis Island": "🚢 Kaş → Meis Island | Ferry | 1200₺ / €35 | 7–20 min\nPassport required. Meis Ferry: +902428361800\n⏰ 09:30, 16:00 (departure) | 12:00, 18:00 (return)",
 }
@@ -290,6 +289,10 @@ SPOTS = """🏖️ **Top Spots in Kaş**
 • Lycian Rock Tombs — in town, free entry
 • Lycian Way — 540 km trail (Kaş is the starting point)
 
+🏛️ **Town Centre**
+• Belediye (Town Hall) — Kaş Municipality, easy meeting point
+• Meydan (Main Square) — the harbour square, cafés and benches
+
 🤿 **Underwater**
 • Airplane Wreck Dive — Boeing wreck at 28 m depth
 • Kaş Octopus Bay — underwater photography
@@ -302,9 +305,6 @@ SPOTS = """🏖️ **Top Spots in Kaş**
 • 12 Islands Tour (boat, ~500₺/person)"""
 
 COWORKING = """💻 **Web3 Hub & Workspaces in Kaş**
-
-🏆 **The Office Kaş** — Fibre internet, ergonomic desks, meeting rooms · 08:00–21:00
-[📍 Maps](https://maps.google.com/?q=The+Office+Kas+Turkey)
 
 ☕ **Linckia Roastery** — 40+ single-origin coffees, deep-work atmosphere · 07:30–22:00
 [📍 Maps](https://maps.google.com/?q=Linckia+Roastery+Kas+Turkey)
@@ -322,14 +322,17 @@ COWORKING = """💻 **Web3 Hub & Workspaces in Kaş**
 [📍 Maps](https://maps.google.com/?q=Mama+Africa+Coffee+Kas+Turkey)
 
 ☕ **Cafe Corner** — Breakfast until noon, shaded terrace · 08:00–23:00
-[📍 Maps](https://maps.google.com/?q=Cafe+Corner+Kas+Turkey)"""
+[📍 Maps](https://maps.google.com/?q=Cafe+Corner+Kas+Turkey)
+
+☕ **Cafe Local** — Local favourite, central
+[📍 Maps](https://maps.app.goo.gl/eZcGzegtVHVLeSY6A)"""
 
 FOOD = """🍽️ **Dining in Kaş**
 
 🥩 **Şişçi Ahmet** ⭐4.7 — Local institution, şiş kebab, piyaz, wood-fired chicken soup
 [📍 Maps](https://maps.google.com/?q=Sisci+Ahmet+Kas+Turkey)
 
-🐟 **Ege Restoran** — Mediterranean & Turkish on the main boulevard · 08:00–00:00
+🐟 **Ege Restoran (Taner Usta)** — Home-style Mediterranean & Turkish on the main boulevard · 08:00–00:00
 [📍 Maps](https://maps.google.com/?q=Ege+Restoran+Taner+Usta+Kas+Turkey)
 
 🏺 **Smiley's Restaurant** — Inside an ancient Roman cistern, grilled octopus & fresh fish · 12:00–00:00
